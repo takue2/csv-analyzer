@@ -1,19 +1,22 @@
 {
-  "name": "csv-analyzer",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.29.1-dev132.0",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
-  }
+	"name": "csv-analyzer",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"scripts": {
+		"serve": "rm -rf dist/* && bun build src/index.html --outdir=dist && bunx serve dist"
+	},
+	"dependencies": {
+		"@duckdb/duckdb-wasm": "^1.29.1-dev132.0",
+		"@types/react": "^19.1.9",
+		"@types/react-dom": "^19.1.7",
+		"react": "^19.1.1",
+		"react-dom": "^19.1.1"
+	}
 }
