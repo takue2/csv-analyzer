@@ -10,7 +10,8 @@
 		"typescript": "^5"
 	},
 	"scripts": {
-		"serve": "rm -rf dist/* && bun build src/index.html --outdir=dist && bunx serve dist"
+		"serve": "rm -rf dist/* && bun build src/index.html --outdir=dist && bunx serve dist",
+		"build:page": "rm -rf docs/* && bun build src/index.html --outdir=docs"
 	},
 	"dependencies": {
 		"@duckdb/duckdb-wasm": "^1.29.1-dev132.0",
