@@ -1,3 +1,21 @@
+# CSV Analyzer Project
+
+This is a client-side CSV analysis tool built with React, TypeScript, and DuckDB WebAssembly.
+
+## Project Structure
+
+- `src/app.tsx` - Main application entry point with global styles
+- `src/components/CSVAnalyzer.tsx` - Main CSV analyzer component
+- `src/components/ResultsTable.tsx` - Table display for query results
+- `src/styles/index.ts` - CSS-in-JS styles
+- `src/index.html` - Main HTML template
+
+## Commands
+
+- `bun run serve` - Build and serve the application locally
+- `bun install` - Install dependencies
+- `bun test` - Run tests
+
 ---
 
 Default to using Bun instead of Node.js.
