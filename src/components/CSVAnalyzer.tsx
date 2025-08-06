@@ -12,6 +12,9 @@ interface CSVAnalyzerState {
 	query: string;
 	results: any[];
 	isInitialized: boolean;
+	hasHeader: boolean;
+	columnDefs: string;
+	createTableSQL: string;
 }
 
 const CSVAnalyzer: React.FC = () => {
@@ -24,6 +27,9 @@ const CSVAnalyzer: React.FC = () => {
 		query: "SELECT * FROM csv_data LIMIT 10;",
 		results: [],
 		isInitialized: false,
+		hasHeader: true,
+		columnDefs: "",
+		createTableSQL: "",
 	});
 
 	const urlInputRef = useRef<HTMLInputElement>(null);
@@ -122,16 +128,68 @@ const CSVAnalyzer: React.FC = () => {
 				throw new Error("No data found in CSV");
 			}
 
-			const headers = parsedData[0];
-			if (!headers || headers.length === 0) {
-				throw new Error("Invalid CSV: no headers found");
-			}
-			const rows = parsedData.slice(1);
+			let headers: string[];
+			let rows: string[][];
 
-			const columnDefs = headers
-				.map((header) => `"${header.replace(/"/g, '""')}" VARCHAR`)
-				.join(", ");
-			await state.conn.query(`CREATE TABLE csv_data (${columnDefs})`);
+			if (state.hasHeader) {
+				headers = parsedData[0] || [];
+				rows = parsedData.slice(1);
+			} else {
+				const columnCount = parsedData[0]?.length || 0;
+				headers = Array.from(
+					{ length: columnCount },
+					(_, i) => `column_${i + 1}`
+				);
+				rows = parsedData;
+			}
+
+			if (!headers || headers.length === 0) {
+				throw new Error("Invalid CSV: no columns found");
+			}
+
+			let finalColumnDefs: string;
+
+			if (state.columnDefs.trim()) {
+				const customDefs = state.columnDefs
+					.trim()
+					.split(",")
+					.map((def) => def.trim());
+
+				if (state.hasHeader && customDefs.length !== headers.length) {
+					throw new Error(
+						`Column definitions count (${customDefs.length}) doesn't match header count (${headers.length})`
+					);
+				}
+
+				if (state.hasHeader) {
+					const headerNames = headers.map((h) =>
+						h.toLowerCase().trim()
+					);
+					const defNames = customDefs.map((def) => {
+						const match = def.match(/^([^\s]+)/);
+						return match
+							? match[1]?.toLowerCase().replace(/"/g, "") ?? ""
+							: "";
+					});
+
+					for (let i = 0; i < headerNames.length; i++) {
+						if (headerNames[i] !== defNames[i]) {
+							throw new Error(
+								`Header "${headers[i]}" doesn't match column definition "${defNames[i]}"`
+							);
+						}
+					}
+				}
+
+				finalColumnDefs = customDefs.join(", ");
+			} else {
+				finalColumnDefs = headers
+					.map((header) => `"${header.replace(/"/g, '""')}" VARCHAR`)
+					.join(", ");
+			}
+
+			const createTableSQL = `CREATE TABLE csv_data (${finalColumnDefs})`;
+			await state.conn.query(createTableSQL);
 
 			const batchSize = 1000;
 			for (let i = 0; i < rows.length; i += batchSize) {
@@ -165,6 +223,7 @@ const CSVAnalyzer: React.FC = () => {
 				dataInfo: `Loaded ${count} rows from ${source}`,
 				isLoading: false,
 				error: "",
+				createTableSQL,
 			}));
 		} catch (error) {
 			console.error("Error loading CSV data:", error);
@@ -321,6 +380,38 @@ const CSVAnalyzer: React.FC = () => {
 							style={styles.input}
 						/>
 					</div>
+					<div style={styles.inputGroup}>
+						<label>
+							<input
+								type="checkbox"
+								checked={state.hasHeader}
+								onChange={(e) =>
+									setState((prev) => ({
+										...prev,
+										hasHeader: e.target.checked,
+									}))
+								}
+							/>
+							First row contains headers
+						</label>
+					</div>
+					<div style={styles.inputGroup}>
+						<label htmlFor="columnDefs">
+							Column definitions (optional):
+						</label>
+						<textarea
+							id="columnDefs"
+							value={state.columnDefs}
+							onChange={(e) =>
+								setState((prev) => ({
+									...prev,
+									columnDefs: e.target.value,
+								}))
+							}
+							placeholder="name VARCHAR, age INTEGER, salary DECIMAL(10,2)"
+							style={{ ...styles.textarea, height: "60px" }}
+						/>
+					</div>
 				</div>
 				<button
 					onClick={handleLoadCSV}
@@ -337,6 +428,22 @@ const CSVAnalyzer: React.FC = () => {
 
 				{state.dataInfo && (
 					<div style={styles.info}>{state.dataInfo}</div>
+				)}
+				{state.createTableSQL && (
+					<div style={styles.card}>
+						<h3>CREATE TABLE statement:</h3>
+						<pre
+							style={{
+								background: "#f5f5f5",
+								padding: "10px",
+								borderRadius: "4px",
+								overflow: "auto",
+								fontSize: "14px",
+							}}
+						>
+							{state.createTableSQL}
+						</pre>
+					</div>
 				)}
 				{state.error && <div style={styles.error}>{state.error}</div>}
 			</div>
